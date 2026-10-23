@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Item details | CampusFind</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="api.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html">Campus<span>Find</span></a>
+      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a></nav>
+    </header>
+    <main class="container narrow">
+      <a class="back-link" href="index.html">← Back to reports</a>
+      <p id="item-message" class="message" role="status">Loading item...</p>
+      <article id="item-detail" class="detail-panel"></article>
+      <section id="claim-section" class="form-panel" hidden>
+        <p class="eyebrow">REUNITING AN ITEM</p>
+        <h2>Is this yours?</h2>
+        <p class="muted">Send the reporter a claim with details to help verify ownership.</p>
+        <form id="claim-form" class="stacked-form">
+          <label>Your name<input name="claimant_name" required maxlength="120" /></label>
+          <label>Your email<input name="claimant_email" type="email" required maxlength="254" /></label>
+          <label>How can you identify this item?<textarea name="message" required rows="4" maxlength="2000"></textarea></label>
+          <p id="claim-message" class="message" role="status"></p>
+          <button class="button" type="submit">Submit claim</button>
+        </form>
+      </section>
+    </main>
+    <footer>CampusFind · Helping campus belongings find their way home.</footer>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const itemId = params.get("id");
+      const detail = document.querySelector("#item-detail");
+      const itemMessage = document.querySelector("#item-message");
+      const claimSection = document.querySelector("#claim-section");
+      const claimForm = document.querySelector("#claim-form");
+      const claimMessage = document.querySelector("#claim-message");
+
+      function escapeHtml(value = "") {
+        return String(value).replace(/[&<>"']/g, (character) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
+        );
+      }
+
+      async function loadItem() {
+        if (!itemId) {
+          itemMessage.textContent = "No item was specified.";
+          return;
+        }
+        try {
+          const item = await api.getItem(itemId);
+          document.title = `${item.title} | CampusFind`;
+          detail.innerHTML = `
+            ${item.image_url ? `<img class="detail-image" src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" />` : ""}
+            <div class="card-top"><span class="badge ${item.type === "lost" ? "badge-lost" : "badge-found"}">${escapeHtml(item.type || "item")}</span><span class="muted">${escapeHtml(item.category || "")}</span></div>
+            <h1>${escapeHtml(item.title)}</h1>
+            <p class="detail-description">${escapeHtml(item.description)}</p>
+            <p><strong>Location:</strong> ${escapeHtml(item.location)}</p>
+            <p><strong>Contact:</strong> <a href="mailto:${escapeHtml(item.contact || "")}">${escapeHtml(item.contact || "")}</a></p>
+            <p><strong>Status:</strong> ${escapeHtml(item.status || "open")}</p>`;
+          itemMessage.textContent = "";
+          claimSection.hidden = false;
+        } catch (error) {
+          itemMessage.textContent = error.message;
+        }
+      }
+
+      claimForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        claimMessage.textContent = "Submitting your claim...";
+        const claim = Object.fromEntries(new FormData(claimForm).entries());
+        try {
+          await api.submitClaim(itemId, claim);
+          claimForm.reset();
+          claimMessage.textContent = "Your claim was sent. The reporter can follow up using your email.";
+        } catch (error) {
+          claimMessage.textContent = error.message;
+        }
+      });
+
+      loadItem();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Report an item | CampusFind</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="api.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html">Campus<span>Find</span></a>
+      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a></nav>
+    </header>
+    <main class="container narrow">
+      <a class="back-link" href="index.html">← Back to reports</a>
+      <section class="form-panel">
+        <p class="eyebrow">HELP THE COMMUNITY</p>
+        <h1>Report an item</h1>
+        <p class="muted">Share a few details so the right person can find your report.</p>
+        <form id="report-form" class="stacked-form">
+          <label>Is it lost or found?
+            <select name="type" required><option value="found">I found something</option><option value="lost">I lost something</option></select>
+          </label>
+          <label>Item name<input name="title" required maxlength="120" placeholder="e.g. Blue water bottle" /></label>
+          <label>Category<input name="category" required maxlength="80" placeholder="e.g. Electronics, clothing" /></label>
+          <label>Where was it lost or found?<input name="location" required maxlength="160" placeholder="e.g. Library, second floor" /></label>
+          <label>Description<textarea name="description" required rows="4" maxlength="2000" placeholder="Color, brand, distinguishing details..."></textarea></label>
+          <label>Your contact email<input name="contact" type="email" required maxlength="254" placeholder="you@campus.edu" /></label>
+          <label>Photo <span class="muted">(optional)</span><input name="image" type="file" accept="image/*" /></label>
+          <p id="form-message" class="message" role="status"></p>
+          <button class="button" type="submit">Publish report</button>
+        </form>
+      </section>
+    </main>
+    <footer>CampusFind · Helping campus belongings find their way home.</footer>
+    <script>
+  const reportForm = document.querySelector("#report-form");
+  const formMessage = document.querySelector("#form-message");
+
+  reportForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    formMessage.textContent = "Submitting your report...";
+
+    const data = new FormData(reportForm);
+    const file = data.get("image");
+    data.delete("image");
+    const item = Object.fromEntries(data.entries());
+
+    try {
+      if (file && file.size) item.image_url = (await api.uploadImage(file)).url;
+      const created = await api.reportItem(item);
+      window.location.href = `item.html?id=${encodeURIComponent(created.id)}`;
+    } catch (error) {
+      formMessage.textContent = error.message;
+    }
+  });
+</script>
+  </body>
+</html>

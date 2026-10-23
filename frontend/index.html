@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CampusFind | Lost and Found</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="api.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html">Campus<span>Find</span></a>
+      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a></nav>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <p class="eyebrow">Lost something? Found something?</p>
+        <h1>Let’s get it <span>back where it belongs.</span></h1>
+        <p class="muted">Browse recent campus reports or share an item you’ve found.</p>
+      </section>
+      <section class="listing">
+        <div class="section-heading">
+          <div><p class="eyebrow">COMMUNITY BOARD</p><h2>Recent reports</h2></div>
+          <form id="search-form" class="search-form">
+            <label class="visually-hidden" for="search">Search reports</label>
+            <input id="search" name="search" type="search" placeholder="Search items, places..." />
+            <button class="button" type="submit">Search</button>
+          </form>
+        </div>
+        <p id="message" class="message" role="status"></p>
+        <div id="items" class="item-grid" aria-live="polite"></div>
+      </section>
+    </main>
+    <footer>CampusFind · Helping campus belongings find their way home.</footer>
+    <script>
+      const itemContainer = document.querySelector("#items");
+      const message = document.querySelector("#message");
+
+      function escapeHtml(value = "") {
+        return String(value).replace(/[&<>"']/g, (character) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
+        );
+      }
+
+      function renderItems(rows) {
+        if (!rows.length) {
+          itemContainer.innerHTML = '<div class="empty-state">No reports found. Try another search or report an item.</div>';
+          return;
+        }
+        itemContainer.innerHTML = rows
+          .map(
+            (item) => `
+              <a class="item-card" href="item.html?id=${encodeURIComponent(item.id)}">
+                <div class="card-top">
+                  <span class="badge ${item.type === "lost" ? "badge-lost" : "badge-found"}">${escapeHtml(item.type || "item")}</span>
+                  <span class="muted">${escapeHtml(item.category || "")}</span>
+                </div>
+                <h3>${escapeHtml(item.title)}</h3>
+                <p class="card-description">${escapeHtml(item.description)}</p>
+                <p class="card-location">⌖ ${escapeHtml(item.location)}</p>
+              </a>`,
+          )
+          .join("");
+      }
+
+      async function loadItems(search = "") {
+        message.textContent = "Loading reports...";
+        itemContainer.innerHTML = "";
+        try {
+          renderItems(await api.listItems(search));
+          message.textContent = "";
+        } catch (error) {
+          message.textContent = error.message;
+        }
+      }
+
+      document.querySelector("#search-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        loadItems(document.querySelector("#search").value.trim());
+      });
+
+      loadItems();
+    </script>
+  </body>
+</html>
