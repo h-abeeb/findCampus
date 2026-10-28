@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My reports | CampusFind</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="api.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html">Campus<span>Find</span></a>
+      <nav><a href="index.html">Browse items</a><a href="my-reports.html">My reports</a><a class="button button-small" href="report.html">Report an item</a><button id="auth-btn" class="button button-small" type="button"></button></nav>
+    </header>
+    <main class="container">
+      <section class="listing">
+        <div class="section-heading"><div><p class="eyebrow">YOUR ACCOUNT</p><h2>My reports</h2></div></div>
+        <p id="message" class="message" role="status">Loading...</p>
+        <div id="items" class="item-grid"></div>
+      </section>
+    </main>
+    <footer>CampusFind · Helping campus belongings find their way home.</footer>
+    <script>
+      (async () => {
+        if (!(await getUser())) return login();
+        const message = document.querySelector("#message");
+        try {
+          const rows = await api.myItems();
+          message.textContent = rows.length ? "" : "You haven't reported anything yet.";
+          document.querySelector("#items").innerHTML = rows.map((item) => `
+            <a class="item-card" href="item.html?id=${encodeURIComponent(item.id)}">
+              <div class="card-top">
+                <span class="badge ${item.type === "lost" ? "badge-lost" : "badge-found"}">${escapeHtml(item.type)}</span>
+                <span class="muted">${escapeHtml(item.status || "open")}</span>
+              </div>
+              <h3>${escapeHtml(item.title)}</h3>
+              <p class="card-description">${escapeHtml(item.description)}</p>
+              <p class="card-location">⌖ ${escapeHtml(item.location)}</p>
+            </a>`).join("");
+        } catch (error) {
+          message.textContent = error.message;
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Report an item | CampusFind</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
     <script src="api.js"></script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html">Campus<span>Find</span></a>
-      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a></nav>
+      <nav><a href="index.html">Browse items</a><a href="my-reports.html">My reports</a><a class="button button-small" href="report.html">Report an item</a><button id="auth-btn" class="button button-small" type="button"></button></nav>
     </header>
     <main class="container narrow">
       <a class="back-link" href="index.html">← Back to reports</a>
@@ -26,9 +28,13 @@
           <label>Category<input name="category" required maxlength="80" placeholder="e.g. Electronics, clothing" /></label>
           <label>Where was it lost or found?<input name="location" required maxlength="160" placeholder="e.g. Library, second floor" /></label>
           <label>Description<textarea name="description" required rows="4" maxlength="2000" placeholder="Color, brand, distinguishing details..."></textarea></label>
-          <label>Your contact email<input name="contact" type="email" required maxlength="254" placeholder="you@campus.edu" /></label>
+          <label id="q-label">Verification question
+            <input name="verification_question" maxlength="200" placeholder="Something only the owner knows, e.g. What is the lock screen wallpaper?" />
+            <span class="muted">Don't put the answer in the description. Only the real owner should be able to answer it.</span>
+          </label>
+          <label>Your contact email<input name="contact" type="email" required maxlength="254" /></label>
           <label>Phone / WhatsApp <span class="muted">(optional)</span><input name="phone" type="tel" maxlength="15" placeholder="+91 98765 43210" /></label>
-          <label>Photo <span class="muted">(optional)</span><input name="image" type="file" accept="image/*" /></label>
+          <label>Photo <span class="muted">(optional)</span><input name="image" type="file" accept="image/jpeg,image/png,image/webp" /></label>
           <p id="form-message" class="message" role="status"></p>
           <button class="button" type="submit">Publish report</button>
         </form>
@@ -36,26 +42,40 @@
     </main>
     <footer>CampusFind · Helping campus belongings find their way home.</footer>
     <script>
-  const reportForm = document.querySelector("#report-form");
-  const formMessage = document.querySelector("#form-message");
+      const reportForm = document.querySelector("#report-form");
+      const formMessage = document.querySelector("#form-message");
+      const qLabel = document.querySelector("#q-label");
+      const qInput = reportForm.elements.verification_question;
 
-  reportForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    formMessage.textContent = "Submitting your report...";
+      getUser().then((u) => {
+        if (!u) login();
+        else reportForm.elements.contact.value = u.email || "";
+      });
 
-    const data = new FormData(reportForm);
-    const file = data.get("image");
-    data.delete("image");
-    const item = Object.fromEntries(data.entries());
+      function syncType() {
+        const found = reportForm.elements.type.value === "found";
+        qLabel.hidden = !found;
+        qInput.required = found;
+      }
+      reportForm.elements.type.addEventListener("change", syncType);
+      syncType();
 
-    try {
-      if (file && file.size) item.image_url = (await api.uploadImage(file)).url;
-      const created = await api.reportItem(item);
-      window.location.href = `item.html?id=${encodeURIComponent(created.id)}`;
-    } catch (error) {
-      formMessage.textContent = error.message;
-    }
-  });
-</script>
+      reportForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!(await getUser())) return login();
+        formMessage.textContent = "Submitting your report...";
+        const data = new FormData(reportForm);
+        const file = data.get("image");
+        data.delete("image");
+        const item = Object.fromEntries(data.entries());
+        try {
+          if (file && file.size) item.image_url = (await api.uploadImage(file)).url;
+          const created = await api.reportItem(item);
+          window.location.href = `item.html?id=${encodeURIComponent(created.id)}`;
+        } catch (error) {
+          formMessage.textContent = error.message;
+        }
+      });
+    </script>
   </body>
 </html>

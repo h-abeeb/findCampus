@@ -1,11 +1,13 @@
 const API_BASE = window.API_BASE || "http://127.0.0.1:5000/api";
 
 async function apiRequest(path, options = {}) {
+  const token = await getToken();
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       // Only set JSON header for string bodies; FormData sets its own boundary
       ...(typeof options.body === "string" ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
@@ -33,9 +35,15 @@ const api = {
     form.append("image", file);
     return apiRequest("/upload", { method: "POST", body: form });
   },
+  deleteItem: (id) =>
+    apiRequest(`/items/${encodeURIComponent(id)}`, { method: "DELETE" }),
   submitClaim: (id, claim) =>
     apiRequest(`/items/${encodeURIComponent(id)}/claims`, {
       method: "POST",
       body: JSON.stringify(claim),
     }),
+  myItems: () => apiRequest("/my/items"),
+  listClaims: (id) => apiRequest(`/items/${encodeURIComponent(id)}/claims`),
+  decideClaim: (id, action) =>
+    apiRequest(`/claims/${encodeURIComponent(id)}/${action}`, { method: "POST" }),
 };

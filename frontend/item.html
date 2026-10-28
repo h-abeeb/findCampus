@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Item details | CampusFind</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
     <script src="api.js"></script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html">Campus<span>Find</span></a>
-      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a></nav>
+      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a><button id="auth-btn" class="button button-small" type="button"></button></nav>
     </header>
     <main class="container narrow">
       <a class="back-link" href="index.html">← Back to reports</a>
@@ -60,7 +62,20 @@
             <p class="detail-description">${escapeHtml(item.description)}</p>
             <p><strong>Location:</strong> ${escapeHtml(item.location)}</p>
             <p><strong>${item.type === "lost" ? "Found it? Contact the owner:" : "Contact:"}</strong> <a href="mailto:${escapeHtml(item.contact || "")}">${escapeHtml(item.contact || "")}</a></p>
+             ${item.phone ? `<p><strong>Phone:</strong> <a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a></p>` : ""}
             <p><strong>Status:</strong> ${escapeHtml(item.status || "open")}</p>`;
+          const user = await getUser();
+          if (user && user.id === item.user_id) {
+            const btn = document.createElement("button");
+            btn.className = "button";
+            btn.textContent = "Delete this report";
+            btn.onclick = async () => {
+              if (!confirm("Delete this report permanently?")) return;
+              try { await api.deleteItem(item.id); location.href = "index.html"; }
+              catch (e) { alert(e.message); }
+            };
+            detail.appendChild(btn);
+          }
           itemMessage.textContent = "";
           claimSection.hidden = item.type === "lost";
         } catch (error) {
@@ -70,6 +85,7 @@
 
       claimForm.addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (!(await getUser())) return login();
         claimMessage.textContent = "Submitting your claim...";
         const claim = Object.fromEntries(new FormData(claimForm).entries());
         try {

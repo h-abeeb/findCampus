@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CampusFind | Lost and Found</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
     <script src="api.js"></script>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="index.html">Campus<span>Find</span></a>
-      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a></nav>
+      <nav><a href="index.html">Browse items</a><a class="button button-small" href="report.html">Report an item</a><a href="my-reports.html">My reports</a><button id="auth-btn" class="button button-small" type="button"></button></nav>
     </header>
     <main class="container">
       <section class="hero">
