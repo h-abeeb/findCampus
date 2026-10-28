@@ -4,7 +4,8 @@ async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      // Only set JSON header for string bodies; FormData sets its own boundary
+      ...(typeof options.body === "string" ? { "Content-Type": "application/json" } : {}),
       ...options.headers,
     },
   });
@@ -15,12 +16,23 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
+function escapeHtml(value = "") {
+  return String(value).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
+}
+
 const api = {
   listItems: (search = "") =>
     apiRequest(`/items${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   getItem: (id) => apiRequest(`/items/${encodeURIComponent(id)}`),
   reportItem: (item) =>
     apiRequest("/items", { method: "POST", body: JSON.stringify(item) }),
+  uploadImage: (file) => {
+    const form = new FormData();
+    form.append("image", file);
+    return apiRequest("/upload", { method: "POST", body: form });
+  },
   submitClaim: (id, claim) =>
     apiRequest(`/items/${encodeURIComponent(id)}/claims`, {
       method: "POST",

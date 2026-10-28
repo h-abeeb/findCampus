@@ -21,6 +21,12 @@
       <section class="listing">
         <div class="section-heading">
           <div><p class="eyebrow">COMMUNITY BOARD</p><h2>Recent reports</h2></div>
+
+          <div class="tabs">
+            <button type="button" class="tab active" data-tab="found">Found</button>
+            <button type="button" class="tab" data-tab="lost">Lost</button>
+          </div>
+
           <form id="search-form" class="search-form">
             <label class="visually-hidden" for="search">Search reports</label>
             <input id="search" name="search" type="search" placeholder="Search items, places..." />
@@ -28,26 +34,22 @@
           </form>
         </div>
         <p id="message" class="message" role="status"></p>
-        <div id="items" class="item-grid" aria-live="polite"></div>
+
+        <div id="found-items" class="item-grid" aria-live="polite"></div>
+        <div id="lost-items" class="item-grid" hidden></div>
       </section>
     </main>
     <footer>CampusFind · Helping campus belongings find their way home.</footer>
     <script>
-      const itemContainer = document.querySelector("#items");
       const message = document.querySelector("#message");
 
-      function escapeHtml(value = "") {
-        return String(value).replace(/[&<>"']/g, (character) =>
-          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
-        );
-      }
-
-      function renderItems(rows) {
+      function renderInto(selector, rows, emptyText) {
+        const box = document.querySelector(selector);
         if (!rows.length) {
-          itemContainer.innerHTML = '<div class="empty-state">No reports found. Try another search or report an item.</div>';
+          box.innerHTML = `<div class="empty-state">${emptyText}</div>`;
           return;
         }
-        itemContainer.innerHTML = rows
+        box.innerHTML = rows
           .map(
             (item) => `
               <a class="item-card" href="item.html?id=${encodeURIComponent(item.id)}">
@@ -65,14 +67,27 @@
 
       async function loadItems(search = "") {
         message.textContent = "Loading reports...";
-        itemContainer.innerHTML = "";
         try {
-          renderItems(await api.listItems(search));
+          const rows = await api.listItems(search);
+          const found = rows.filter((i) => i.type === "found");
+          const lost = rows.filter((i) => i.type === "lost");
+          renderInto("#found-items", found, "No found items reported.");
+          renderInto("#lost-items", lost, "No lost items reported.");
+          document.querySelector('[data-tab="found"]').textContent = `Found (${found.length})`;
+          document.querySelector('[data-tab="lost"]').textContent = `Lost (${lost.length})`;
           message.textContent = "";
         } catch (error) {
           message.textContent = error.message;
         }
       }
+
+      document.querySelectorAll(".tab").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b === btn));
+          document.querySelector("#found-items").hidden = btn.dataset.tab !== "found";
+          document.querySelector("#lost-items").hidden = btn.dataset.tab !== "lost";
+        }),
+      );
 
       document.querySelector("#search-form").addEventListener("submit", (event) => {
         event.preventDefault();

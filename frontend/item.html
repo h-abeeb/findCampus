@@ -59,10 +59,10 @@
             <h1>${escapeHtml(item.title)}</h1>
             <p class="detail-description">${escapeHtml(item.description)}</p>
             <p><strong>Location:</strong> ${escapeHtml(item.location)}</p>
-            <p><strong>Contact:</strong> <a href="mailto:${escapeHtml(item.contact || "")}">${escapeHtml(item.contact || "")}</a></p>
+            <p><strong>${item.type === "lost" ? "Found it? Contact the owner:" : "Contact:"}</strong> <a href="mailto:${escapeHtml(item.contact || "")}">${escapeHtml(item.contact || "")}</a></p>
             <p><strong>Status:</strong> ${escapeHtml(item.status || "open")}</p>`;
           itemMessage.textContent = "";
-          claimSection.hidden = false;
+          claimSection.hidden = item.type === "lost";
         } catch (error) {
           itemMessage.textContent = error.message;
         }
