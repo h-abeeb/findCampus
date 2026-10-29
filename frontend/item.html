@@ -18,6 +18,10 @@
       <a class="back-link" href="index.html">← Back to reports</a>
       <p id="item-message" class="message" role="status">Loading item...</p>
       <article id="item-detail" class="detail-panel"></article>
+      <section id="matches-section" class="form-panel" hidden>
+        <h2>Possible matches</h2>
+        <div id="matches-list" class="item-grid"></div>
+      </section>
       <section id="claim-section" class="form-panel" hidden>
         <p class="eyebrow">REUNITING AN ITEM</p>
         <h2>Is this yours?</h2>
@@ -37,6 +41,8 @@
       const itemId = params.get("id");
       const detail = document.querySelector("#item-detail");
       const itemMessage = document.querySelector("#item-message");
+      const matchesSection = document.querySelector("#matches-section");
+      const matchesList = document.querySelector("#matches-list");
       const claimSection = document.querySelector("#claim-section");
       const claimForm = document.querySelector("#claim-form");
       const claimMessage = document.querySelector("#claim-message");
@@ -78,6 +84,19 @@
           }
           itemMessage.textContent = "";
           claimSection.hidden = item.type === "lost";
+          try {
+            const matches = await api.matches(item.id);
+            matchesSection.hidden = matches.length === 0;
+            matchesList.innerHTML = matches.map((match) => `
+              <a class="item-card" href="item.html?id=${encodeURIComponent(match.id)}">
+                <h3>${escapeHtml(match.title)}</h3>
+                <p class="card-description">${escapeHtml(match.description || "")}</p>
+                <p class="card-location">${escapeHtml(match.location || "")} · ${Math.round(match.score * 100)}% match</p>
+              </a>`).join("");
+          } catch (error) {
+            matchesSection.hidden = false;
+            matchesList.innerHTML = `<p class="message">${escapeHtml(error.message)}</p>`;
+          }
         } catch (error) {
           itemMessage.textContent = error.message;
         }

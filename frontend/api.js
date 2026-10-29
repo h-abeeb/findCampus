@@ -28,6 +28,7 @@ const api = {
   listItems: (search = "") =>
     apiRequest(`/items${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   getItem: (id) => apiRequest(`/items/${encodeURIComponent(id)}`),
+  matches: (id) => apiRequest(`/items/${encodeURIComponent(id)}/matches`),
   reportItem: (item) =>
     apiRequest("/items", { method: "POST", body: JSON.stringify(item) }),
   uploadImage: (file) => {
